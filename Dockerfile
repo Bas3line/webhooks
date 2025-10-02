@@ -1,4 +1,4 @@
-FROM rust:1.75-slim-bookworm as builder
+FROM rust:1.81-slim-bookworm as builder
 
 RUN apt-get update && apt-get install -y \
     pkg-config \
