@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events - Webhook Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000000;
+            color: #ffffff;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #ffffff;
+            font-size: 24px;
+        }
+
+        .nav-btn {
+            background: #ffffff;
+            color: #000000;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: #cccccc;
+        }
+
+        .events-section {
+            background: #1a1a1a;
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid #333333;
+        }
+
+        .section-title {
+            color: #ffffff;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .event-item {
+            background: #000000;
+            padding: 20px;
+            border: 1px solid #333333;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .event-endpoint {
+            font-weight: bold;
+            color: #ffffff;
+            font-size: 16px;
+        }
+
+        .event-timestamp {
+            color: #cccccc;
+            font-size: 12px;
+        }
+
+        .event-details {
+            color: #cccccc;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .event-payload {
+            background: #0d1117;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #333333;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .filters {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .filter-input {
+            padding: 8px 12px;
+            border: 1px solid #333333;
+            border-radius: 4px;
+            background: #000000;
+            color: #ffffff;
+            font-size: 14px;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: #ffffff;
+        }
+
+        .no-events {
+            text-align: center;
+            color: #cccccc;
+            padding: 40px;
+            font-size: 16px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .pagination button {
+            background: #333333;
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #555555;
+        }
+
+        .pagination button:disabled {
+            background: #1a1a1a;
+            cursor: not-allowed;
+        }
+
+        .pagination button.active {
+            background: #ffffff;
+            color: #000000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Webhook Events</h1>
+            <a href="/" class="nav-btn">Back to Dashboard</a>
+        </div>
+
+        <div class="events-section">
+            <div class="section-title">All Events</div>
+
+            <div class="filters">
+                <input type="text" id="endpointFilter" class="filter-input" placeholder="Filter by endpoint...">
+                <input type="date" id="dateFilter" class="filter-input">
+                <button onclick="loadEvents()" style="background: #ffffff; color: #000000; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Refresh</button>
+            </div>
+
+            <div id="eventsList">
+                <div class="no-events">Loading events...</div>
+            </div>
+
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+        const eventsPerPage = 10;
+
+        async function apiCall(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    credentials: 'same-origin',
+                    ...options
+                });
+
+                // Check if response has content before trying to parse JSON
+                const contentType = response.headers.get('content-type');
+                let result = {};
+
+                if (contentType && contentType.includes('application/json')) {
+                    const text = await response.text();
+                    if (text.trim()) {
+                        result = JSON.parse(text);
+                    }
+                }
+
+                if (!response.ok) {
+                    console.error('API Error:', response.status, result);
+                    throw new Error(result.message || `HTTP error! status: ${response.status}`);
+                }
+
+                return result;
+            } catch (error) {
+                console.error('API call failed:', error);
+                throw error;
+            }
+        }
+
+        async function loadEvents(page = 1) {
+            currentPage = page;
+            const endpointFilter = document.getElementById('endpointFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+
+            let url = `/api/events?limit=${eventsPerPage}&offset=${(page - 1) * eventsPerPage}`;
+            if (endpointFilter) url += `&endpoint=${encodeURIComponent(endpointFilter)}`;
+            if (dateFilter) url += `&date=${dateFilter}`;
+
+            try {
+                const events = await apiCall(url);
+                renderEvents(events);
+                renderPagination();
+            } catch (error) {
+                console.error('Failed to load events:', error);
+                document.getElementById('eventsList').innerHTML = '<div class="no-events">Failed to load events</div>';
+            }
+        }
+
+        function renderEvents(events) {
+            const container = document.getElementById('eventsList');
+
+            if (events.length === 0) {
+                container.innerHTML = '<div class="no-events">No events found</div>';
+                return;
+            }
+
+            container.innerHTML = events.map(event => `
+                <div class="event-item">
+                    <div class="event-header">
+                        <div class="event-endpoint">${event.endpoint || 'Unknown'}</div>
+                        <div class="event-timestamp">${new Date(event.timestamp).toLocaleString()}</div>
+                    </div>
+                    <div class="event-details">
+                        Type: ${event.event_type || 'Unknown'} |
+                        Source: ${event.source_ip || 'Unknown'} |
+                        Status: ${event.status_code || 200}
+                    </div>
+                    ${event.body ? `
+                        <div class="event-payload">${JSON.stringify(event.body, null, 2)}</div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function renderPagination() {
+            const container = document.getElementById('pagination');
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let pagination = '';
+
+            if (currentPage > 1) {
+                pagination += `<button onclick="loadEvents(${currentPage - 1})">Previous</button>`;
+            }
+
+            for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+                pagination += `<button onclick="loadEvents(${i})" ${i === currentPage ? 'class="active"' : ''}>${i}</button>`;
+            }
+
+            if (currentPage < totalPages) {
+                pagination += `<button onclick="loadEvents(${currentPage + 1})">Next</button>`;
+            }
+
+            container.innerHTML = pagination;
+        }
+
+        document.getElementById('endpointFilter').addEventListener('input', function() {
+            clearTimeout(this.debounceTimer);
+            this.debounceTimer = setTimeout(() => loadEvents(1), 500);
+        });
+
+        document.getElementById('dateFilter').addEventListener('change', function() {
+            loadEvents(1);
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEvents();
+        });
+    </script>
+</body>
+</html>

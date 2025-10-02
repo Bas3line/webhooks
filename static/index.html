@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webhook Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000000;
+            color: #ffffff;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333333;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #cccccc;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .username {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .logout-btn {
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #cccccc;
+        }
+
+        .nav-tabs {
+            background: #1a1a1a;
+            border-radius: 8px;
+            border: 1px solid #333333;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .nav-tabs button {
+            background: none;
+            border: none;
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #cccccc;
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tabs button.active {
+            color: #ffffff;
+            border-bottom-color: #ffffff;
+            background: #333333;
+        }
+
+        .nav-tabs button:hover {
+            background: #333333;
+            color: #ffffff;
+        }
+
+        .card {
+            background: #1a1a1a;
+            border-radius: 8px;
+            border: 1px solid #333333;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid #333333;
+            background: #000000;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .btn {
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #cccccc;
+        }
+
+        .btn-danger {
+            background: #000000;
+            color: #ffffff;
+            border: 1px solid #ffffff;
+        }
+
+        .btn-danger:hover {
+            background: #333333;
+        }
+
+        .btn-small {
+            padding: 5px 12px;
+            font-size: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #333333;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+
+        .webhook-item {
+            border: 1px solid #333333;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #1a1a1a;
+        }
+
+        .webhook-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .webhook-name {
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .webhook-endpoint {
+            font-family: monospace;
+            background: #000000;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin: 5px 0;
+        }
+
+        .webhook-url {
+            font-family: monospace;
+            background: #333333;
+            color: #ffffff;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            border: 1px solid #ffffff;
+            margin: 5px 0;
+        }
+
+        .webhook-secret {
+            font-family: monospace;
+            background: #333333;
+            color: #ffffff;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            border: 1px solid #ffffff;
+            margin: 5px 0;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .status-inactive {
+            background: #000000;
+            color: #ffffff;
+            border: 1px solid #ffffff;
+        }
+
+        .actions {
+            margin-top: 10px;
+        }
+
+        .actions button {
+            margin-right: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 50px auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #cccccc;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex: 1;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .stat-label {
+            color: #cccccc;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #cccccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>🪝 Webhook Management</h1>
+                <p>Create and manage webhook endpoints with individual secrets</p>
+            </div>
+            <div class="user-info">
+                <span class="username" id="username">Loading...</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="active" onclick="showTab('webhooks')">Webhooks</button>
+            <button onclick="showTab('events')">Recent Events</button>
+        </div>
+
+        <div id="webhooksTab">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalWebhooks">0</div>
+                    <div class="stat-label">Total Webhooks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="activeWebhooks">0</div>
+                    <div class="stat-label">Active Webhooks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalEvents">0</div>
+                    <div class="stat-label">Total Events</div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Create New Webhook</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="createWebhookForm">
+                            <div class="form-group">
+                                <label for="name">Webhook Name</label>
+                                <input type="text" id="name" name="name" required placeholder="My GitHub Webhook">
+                            </div>
+                            <div class="form-group">
+                                <label for="endpoint">Endpoint</label>
+                                <input type="text" id="endpoint" name="endpoint" required placeholder="github-prod">
+                            </div>
+                            <div class="form-group">
+                                <label for="description">Description (Optional)</label>
+                                <textarea id="description" name="description" rows="3" placeholder="Webhook for GitHub repository events"></textarea>
+                            </div>
+                            <button type="submit" class="btn">Create Webhook</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Quick Actions</h3>
+                    </div>
+                    <div class="card-body">
+                        <p style="margin-bottom: 15px;">View all webhook events and monitor activity</p>
+                        <button class="btn" onclick="window.open('/events', '_blank')">View All Events</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Your Webhooks</h3>
+                </div>
+                <div class="card-body">
+                    <div id="webhooksList" class="loading">
+                        <p>Loading webhooks...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="eventsTab" class="hidden">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Recent Events</h3>
+                </div>
+                <div class="card-body">
+                    <div id="eventsList" class="loading">
+                        <p>Loading events...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Delete Webhook</h3>
+                <button class="close" onclick="closeDeleteModal()">&times;</button>
+            </div>
+            <p>Are you sure you want to delete this webhook? This action cannot be undone.</p>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+                <button class="btn" onclick="closeDeleteModal()" style="margin-left: 10px;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/app.js"></script>
+    <script>
+        let currentUser = null;
+
+        async function checkAuth() {
+            document.getElementById('username').textContent = 'User';
+            return true;
+        }
+
+        async function logout() {
+            try {
+                await apiCall('/api/auth/logout', { method: 'POST' });
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+            window.location.href = '/login';
+        }
+
+        function showTab(tabName) {
+            const tabs = ['webhooks', 'events'];
+            tabs.forEach(tab => {
+                document.getElementById(tab + 'Tab').classList.toggle('hidden', tab !== tabName);
+            });
+
+            document.querySelectorAll('.nav-tabs button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            if (tabName === 'events') {
+                loadEvents();
+            }
+        }
+
+        async function loadEvents() {
+            try {
+                const events = await apiCall('/api/events?limit=20');
+                renderEvents(events);
+            } catch (error) {
+                document.getElementById('eventsList').innerHTML = '<p>Failed to load events</p>';
+            }
+        }
+
+        function renderEvents(events) {
+            const container = document.getElementById('eventsList');
+
+            if (events.length === 0) {
+                container.innerHTML = '<p>No events yet...</p>';
+                return;
+            }
+
+            container.innerHTML = events.map(event => `
+                <div style="padding: 15px; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <strong>${event.endpoint}</strong>
+                        <span style="font-size: 12px; color: #cccccc;">${new Date(event.timestamp).toLocaleString()}</span>
+                    </div>
+                    <div style="color: #cccccc; font-size: 14px;">${event.event_type || 'Unknown'} from ${event.source_ip || 'Unknown IP'}</div>
+                    <div style="font-family: monospace; background: #f3f4f6; padding: 8px; border-radius: 4px; margin-top: 8px; font-size: 12px; max-height: 100px; overflow-y: auto;">
+                        ${JSON.stringify(event.body, null, 2)}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth().then(() => {
+                loadWebhooks();
+            });
+        });
+    </script>
+</body>
+</html>

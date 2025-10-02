@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: webhook_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: webhook_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - webhook_network
+
+  webhook-service:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://postgres:webhook_password@postgres:5432/webhook_db
+      BASE_URL: http://localhost:5050
+      BIND_ADDRESS: 0.0.0.0:5050
+      RUST_LOG: info
+      SQLX_OFFLINE: true
+    ports:
+      - "5050:5050"
+    depends_on:
+      - postgres
+    networks:
+      - webhook_network
+    volumes:
+      - ./static:/app/static
+
+volumes:
+  postgres_data:
+
+networks:
+  webhook_network:
+    driver: bridge

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Webhook Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000000;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ffffff;
+        }
+
+        .auth-container {
+            background: #1a1a1a;
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid #333333;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #ffffff;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .logo p {
+            color: #cccccc;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #333333;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 15px;
+        }
+
+        .btn:hover {
+            background: #cccccc;
+        }
+
+        .btn:disabled {
+            background: #333333;
+            cursor: not-allowed;
+            color: #cccccc;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            color: #cccccc;
+            font-size: 14px;
+        }
+
+        .auth-switch {
+            text-align: center;
+            color: #cccccc;
+            font-size: 14px;
+        }
+
+        .auth-switch a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .success {
+            background: #ffffff;
+            color: #000000;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #ffffff;
+        }
+
+        .error {
+            background: #000000;
+            color: #ffffff;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="logo">
+            <h1>Webhook Manager</h1>
+            <p>Secure webhook management platform</p>
+        </div>
+
+        <div id="message" class="hidden"></div>
+
+        <div id="loginForm">
+            <form id="login">
+                <div class="form-group">
+                    <label for="loginUsername">Username</label>
+                    <input type="text" id="loginUsername" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" name="password" required>
+                </div>
+                <button type="submit" class="btn" id="loginBtn">Sign In</button>
+            </form>
+
+            <div class="auth-switch">
+                Don't have an account? <a href="#" onclick="showRegister()">Sign up</a>
+            </div>
+        </div>
+
+        <div id="registerForm" class="hidden">
+            <form id="register">
+                <div class="form-group">
+                    <label for="registerUsername">Username</label>
+                    <input type="text" id="registerUsername" name="username" required minlength="3" maxlength="50">
+                    <small style="color: #cccccc;">3-50 characters</small>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" name="password" required minlength="6">
+                    <small style="color: #cccccc;">Minimum 6 characters</small>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                </div>
+                <button type="submit" class="btn" id="registerBtn">Create Account</button>
+            </form>
+
+            <div class="auth-switch">
+                Already have an account? <a href="#" onclick="showLogin()">Sign in</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function apiCall(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    credentials: 'same-origin',
+                    ...options
+                });
+
+                // Check if response has content before trying to parse JSON
+                const contentType = response.headers.get('content-type');
+                let result = {};
+
+                if (contentType && contentType.includes('application/json')) {
+                    const text = await response.text();
+                    if (text.trim()) {
+                        result = JSON.parse(text);
+                    }
+                }
+
+                if (!response.ok) {
+                    console.error('API Error:', response.status, result);
+                    throw new Error(result.message || `HTTP error! status: ${response.status}`);
+                }
+
+                return result;
+            } catch (error) {
+                console.error('API call failed:', error);
+                throw error;
+            }
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = message;
+            messageDiv.className = type;
+            messageDiv.classList.remove('hidden');
+        }
+
+        function hideMessage() {
+            document.getElementById('message').classList.add('hidden');
+        }
+
+        function showLogin() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+            hideMessage();
+        }
+
+        function showRegister() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+            hideMessage();
+        }
+
+        async function checkAuth() {
+            // Disabled - no auth required
+            return false;
+        }
+
+        document.getElementById('login').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+
+            const formData = new FormData(this);
+            const data = {
+                username: formData.get('username'),
+                password: formData.get('password')
+            };
+
+            try {
+                const response = await apiCall('/api/login', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                if (response.success) {
+                    showMessage('Login successful! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                } else {
+                    showMessage(response.message, 'error');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showMessage(error.message || 'Login failed. Please try again.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
+        });
+
+        document.getElementById('register').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('registerBtn');
+            btn.disabled = true;
+            btn.textContent = 'Creating account...';
+
+            const formData = new FormData(this);
+            const password = formData.get('password');
+            const confirmPassword = formData.get('confirmPassword');
+
+            if (password !== confirmPassword) {
+                showMessage('Passwords do not match', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+                return;
+            }
+
+            const data = {
+                username: formData.get('username'),
+                password: password
+            };
+
+            try {
+                const response = await apiCall('/api/register', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                if (response.success) {
+                    showMessage('Account created successfully! Please sign in.', 'success');
+                    this.reset();
+                    setTimeout(() => {
+                        showLogin();
+                    }, 2000);
+                } else {
+                    showMessage(response.message, 'error');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showMessage(error.message || 'Registration failed. Please try again.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+            }
+        });
+
+        checkAuth();
+    </script>
+</body>
+</html>
